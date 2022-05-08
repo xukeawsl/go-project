@@ -4,11 +4,15 @@ import (
 	"bufio"
 	"encoding/json"
 	"os"
+	"sync"
 )
 
 var (
 	topicIndexMap map[int64]*Topic  // 通过 topic id 索引 Topic
 	postIndexMap  map[int64][]*Post // 通过 post id 索引一组 Post
+
+	// 待优化：可以每个桶一把锁
+	rwMutex sync.RWMutex // 读写锁用于保护 postIndexMap
 )
 
 func Init(filePath string) error {

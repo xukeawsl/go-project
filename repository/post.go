@@ -1,7 +1,9 @@
 package repository
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"sync"
 )
 
@@ -10,6 +12,11 @@ type Post struct {
 	ParentId   int64  `json:"parent_id"`
 	Content    string `json:"content"`
 	CreateTime int64  `json:"create_time"`
+}
+
+type PostRequest struct {
+	ParentId int64  `json:"topic_id"`
+	Content  string `json:"content"`
 }
 
 type PostDao struct{}
@@ -34,4 +41,30 @@ func (*PostDao) QueryPostByParentId(parentId int64) ([]*Post, error) {
 		return nil, fmt.Errorf("not found %v Posts", parentId)
 	}
 	return posts, nil
+}
+
+// 插入用户 post 的消息
+func (*PostDao) InsertPost(post *Post) error {
+	f, err := os.OpenFile("./data/post", os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0600)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	// 序列化结构体
+	marshal, _ := json.Marshal(post)
+	if _, err = f.WriteString(string(marshal) + "\n"); err != nil {
+		return err
+	}
+
+	rwMutex.Lock()
+	postList, ok := postIndexMap[post.ParentId]
+	if !ok {
+		postIndexMap[post.ParentId] = []*Post{post}
+	} else {
+		postList = append(postList, post)
+		postIndexMap[post.ParentId] = postList
+	}
+	rwMutex.Unlock()
+
+	return nil
 }

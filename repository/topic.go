@@ -36,3 +36,8 @@ func (*TopicDao) QueryTopicById(id int64) (*Topic, error) {
 	}
 	return topic, nil
 }
+
+func (*TopicDao) Exist(topicId int64) bool {
+	_, ok := topicIndexMap[topicId]
+	return ok
+}
